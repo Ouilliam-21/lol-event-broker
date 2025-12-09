@@ -42,9 +42,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Windows x64
-            task: build:windows-x64
-            artifact: lol-event-x64.exe
           - name: Windows x32
             task: build:windows-x32
             artifact: lol-event-x32.exe

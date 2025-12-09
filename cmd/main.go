@@ -10,8 +10,8 @@ func main() {
 	var apiEndpoint string
 	var dropletEndpoint string
 
-	flag.StringVar(&apiEndpoint, "Live client data", "https://127.0.0.1:2999/", "api endpoints to reach live client data")
-	flag.StringVar(&dropletEndpoint, "Droplet URL", "https://127.0.0.1:2999/", "endpoint to send league of legend event")
+	flag.StringVar(&apiEndpoint, "liveclient", "https://127.0.0.1:2999", "api endpoints to reach live client data")
+	flag.StringVar(&dropletEndpoint, "droplet", "https://127.0.0.1:2999", "endpoint to send league of legend event")
 
 	flag.Parse()
 

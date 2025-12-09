@@ -15,14 +15,14 @@ type Droplet struct {
 
 func NewDroplet(endpoint string, queue <-chan []byte) (*Droplet, error) {
 
-	health := fmt.Sprintf("%s/health", endpoint)
+	//health := fmt.Sprintf("%s/health", endpoint)
+	/*
+		err := checkEndpoints(health)
 
-	err := checkEndpoints(health)
-
-	if err != nil {
-		return nil, err
-	}
-
+		if err != nil {
+			return nil, err
+		}
+	*/
 	return &Droplet{
 		endpoint: endpoint,
 	}, nil

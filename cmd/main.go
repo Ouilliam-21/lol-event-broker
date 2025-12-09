@@ -20,11 +20,15 @@ func main() {
 	liveClient := internal.NewLiveClient(apiEndpoint, queue)
 	droplet, err := internal.NewDroplet(dropletEndpoint, queue)
 
+	log.Println("Object created for liveclient and droplet")
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	go liveClient.Process()
+
+	log.Println("Waiting to received message events...")
 
 	for msg := range queue {
 		droplet.Send(msg)

@@ -66,6 +66,9 @@ func httpGetRequestWithTimeout(url string, timeout int64) ([]byte, error) {
 }
 
 func (lc LiveClient) poolGameEvent() {
+
+	log.Println("Game started")
+
 	for lc.gameStatus == Running {
 		time.Sleep(time.Second * 5)
 
@@ -103,6 +106,7 @@ func (lc LiveClient) Process() {
 		}
 
 		if evt.Name == GameStart {
+			lc.gameStatus = Running
 			lc.poolGameEvent()
 		}
 

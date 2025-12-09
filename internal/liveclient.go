@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"crypto/tls"
 )
 
 type Status string
@@ -22,10 +23,15 @@ const (
 	MultiKill EventName = "MultiKill"
 	Ace       EventName = "Ace"
 	GameStart EventName = "GameStart"
+	MinionsSpawning EventName = "MinionsSpawning"
 )
 
-type Event struct {
+type Test struct {
 	Name EventName `json:"EventName"`
+}
+
+type Events struct {
+	Events []Test `json:"Events"`
 }
 
 type LiveClient struct {
@@ -49,12 +55,13 @@ func httpGetRequestWithTimeout(url string, timeout int64) ([]byte, error) {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	client := &http.Client{Timeout: time.Second * time.Duration(timeout)}
+	client := &http.Client{Timeout: time.Second * time.Duration(timeout), Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to request at %s: %w", url, err)
 	}
 	defer resp.Body.Close()
+
 
 	raw, _ := io.ReadAll(resp.Body)
 
@@ -75,6 +82,8 @@ func (lc LiveClient) poolGameEvent() {
 		//Add last event id to avoid fetch wholes event from beginng
 		raw, err := httpGetRequestWithTimeout(lc.endpoint, 5)
 
+		log.Println("raw: ", string(raw))
+
 		if err != nil {
 			log.Println("err: ", err)
 			continue
@@ -88,27 +97,39 @@ func (lc LiveClient) poolGameEvent() {
 
 func (lc LiveClient) Process() {
 
-	var evt Event
+	var evts Events
 
 	for {
 		time.Sleep(time.Second * 5)
 
 		raw, err := httpGetRequestWithTimeout(lc.endpoint, 5)
 
+		log.Println("raw: ", string(raw))
+
 		if err != nil {
 			log.Println("err: ", err)
 			continue
 		}
 
-		if err := json.Unmarshal(raw, &evt); err != nil {
+		if err := json.Unmarshal(raw, &evts); err != nil {
 			log.Println("err: ", err)
 			continue
 		}
 
-		if evt.Name == GameStart {
-			lc.gameStatus = Running
-			lc.poolGameEvent()
+		https://127.0.0.1:2999/liveclientdata/eventdata?eventID=1
+
+		for _,evt := range evts.Events{
+			if evt.Name == GameStart {
+				lc.gameStatus = Running
+				lc.poolGameEvent()
+			}
+
+			break
 		}
+
+
+
+
 
 	}
 }

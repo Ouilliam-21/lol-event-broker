@@ -1,0 +1,28 @@
+[tools]
+go = "1.24.4"
+
+
+[tasks."build:windows-x64"]
+description = "Build app for Windows x64"
+run = "GOOS=windows GOARCH=amd64 go build -ldflags='-s -w' -o build/lol-event.exe ./cmd/main.go"
+
+[tasks."build:windows-x32"]
+description = "Build app for Windows x32"
+run = "GOOS=windows GOARCH=386 go build -ldflags='-s -w' -o build/lol-event-386.exe ./cmd/main.go"
+
+[tasks."build:windows-arm-x64"]
+description = "Build app for Windows arm x64"
+run = "GOOS=windows GOARCH=arm64 go build -ldflags='-s -w' -o build/lol-event-arm64.exe ./cmd/main.go"
+
+[tasks."build:mac-arm"]
+description = "Build macOS executable (Apple Silicon)"
+run = "env GOOS=darwin GOARCH=arm64 go build -ldflags='-s -w' -o build/lol-event-mac-arm64 ./cmd/main.go"
+
+[tasks."build:mac-intel"]
+description = "Build macOS executable (Intel)"
+run = "env GOOS=darwin GOARCH=amd64 go build -ldflags='-s -w' -o build/lol-event-mac-amd64 ./cmd/main.go"
+
+[tasks."build:all"]
+description = "Build for all platforms"
+depends = ["build:windows-x64", "build:windows-x32", "build:windows-arm-x64", "build:mac-arm", "build:mac-intel"]
+run = "echo 'All builds completed successfully!'"

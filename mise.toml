@@ -4,11 +4,11 @@ go = "1.24.4"
 
 [tasks."build:windows-x64"]
 description = "Build app for Windows x64"
-run = "GOOS=windows GOARCH=amd64 go build -ldflags='-s -w' -o build/lol-event.exe ./cmd/main.go"
+run = "GOOS=windows GOARCH=amd64 go build -ldflags='-s -w' -o build/lol-event-x64.exe ./cmd/main.go"
 
 [tasks."build:windows-x32"]
 description = "Build app for Windows x32"
-run = "GOOS=windows GOARCH=386 go build -ldflags='-s -w' -o build/lol-event-386.exe ./cmd/main.go"
+run = "GOOS=windows GOARCH=386 go build -ldflags='-s -w' -o build/lol-event-x32.exe ./cmd/main.go"
 
 [tasks."build:windows-arm-x64"]
 description = "Build app for Windows arm x64"

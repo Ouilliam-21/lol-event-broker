@@ -1,8 +1,17 @@
 package riot
 
+type status string
+type event string
+type eventKey string
+
 const (
 	NotStarted status = "NOT STARTED"
 	Running    status = "RUNNING"
+)
+
+const (
+	ID   eventKey = "EventID"
+	Name eventKey = "EventName"
 )
 
 const (

@@ -42,7 +42,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := liveClient.Process(); err != nil {
+		if err := liveClient.Process(ctx); err != nil {
 			log.Printf("LiveClient error: %v", err)
 		}
 	}()

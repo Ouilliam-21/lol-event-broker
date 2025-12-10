@@ -1,6 +1,7 @@
 package riot
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -51,7 +52,6 @@ func NewLiveClient(endpoint string, events chan<- []byte, players chan<- []byte)
 }
 
 func (lc *LiveClient) poolGameEvent() {
-	var events Events
 	var eventID int64
 
 	log.Println("Game started")
@@ -72,59 +72,67 @@ func (lc *LiveClient) poolGameEvent() {
 			return
 		}
 
-		if err := json.Unmarshal(raw, &events); err != nil {
+		eventsContainer, err := NewEvents(raw)
+		if err != nil {
 			log.Println("Can't unmarshal JSON:", err)
 			continue
 		}
 
-		if len(events.Events) <= 0 {
+		if len(eventsContainer.List.Items) <= 0 {
 			continue
 		}
 
-		lastId := events.GetLast().ID
+		last, ok := eventsContainer.GetLast()
 
-		if lastId == eventID {
+		if !ok || last.ID == eventID {
 			continue
 		}
 
-		eventsJSON, err := json.Marshal(events.FilterActiveEvents())
+		eventsJSON, err := json.Marshal(eventsContainer.FilterActiveEvents())
 		if err != nil {
 			log.Printf("Failed to marshal players: %v", err)
 			continue
 		}
 
-		eventID = lastId
+		eventID = last.ID
 		lc.events <- eventsJSON
 		log.Printf("Next event id %d", eventID)
 	}
 }
 
-func (lc *LiveClient) Process() error {
+func (lc *LiveClient) Process(ctx context.Context) error {
 	players := make([]Player, 0, 10)
 
 	for {
-		time.Sleep(5 * time.Second)
+		select {
+		case <-ctx.Done():
+			log.Println("SendEvents shutting down")
+			return ctx.Err()
+		default:
+			time.Sleep(5 * time.Second)
 
-		raw, err := utils.HttpGetRequest(lc.httpClient, lc.endpointPlayers)
-		if err != nil && lc.gameStatus == NotStarted {
-			log.Println("Game not started: couldn't reach live client endpoint")
-			continue
+			raw, err := utils.HttpGetRequest(lc.httpClient, lc.endpointPlayers)
+			if err != nil && lc.gameStatus == NotStarted {
+				log.Println("Game not started: couldn't reach live client endpoint")
+				continue
+			}
+
+			players = players[:0]
+
+			if err := json.Unmarshal(raw, &players); err != nil {
+				log.Println("Can't unmarshal JSON:", err)
+				continue
+			}
+
+			playersJSON, err := json.Marshal(players)
+			if err != nil {
+				log.Printf("Failed to marshal players: %v", err)
+				continue
+			}
+
+			lc.players <- playersJSON
+			lc.poolGameEvent()
 		}
 
-		players = players[:0]
-
-		if err := json.Unmarshal(raw, &players); err != nil {
-			log.Println("Can't unmarshal JSON:", err)
-			continue
-		}
-
-		playersJSON, err := json.Marshal(players)
-		if err != nil {
-			log.Printf("Failed to marshal players: %v", err)
-			continue
-		}
-
-		lc.players <- playersJSON
-		lc.poolGameEvent()
 	}
 }

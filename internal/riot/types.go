@@ -1,31 +1,64 @@
 package riot
 
-type status string
-
-type event string
+import "encoding/json"
 
 type Event struct {
-	ID   int64 `json:"EventID"`
-	Name event `json:"EventName"`
+	ID   int64           `json:"EventID"`
+	Name event           `json:"EventName"`
+	Raw  json.RawMessage `json:"-"`
 }
 
-type Events struct {
-	Events []Event `json:"Events"`
+type EventList struct {
+	Items []Event `json:"Events"`
 }
 
-func (e Events) GetLast() Event {
-	return e.Events[len(e.Events)-1]
+type RawEventList struct {
+	Items []json.RawMessage `json:"Events"`
 }
 
-func (e Events) FilterActiveEvents() []Event {
-	res := make([]Event, 0)
-	for _, evt := range e.Events {
+type EventContainer struct {
+	List EventList
+	Raw  RawEventList
+}
+
+func NewEvents(data []byte) (*EventContainer, error) {
+	var list EventList
+	var rawList RawEventList
+
+	if err := json.Unmarshal(data, &rawList); err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(data, &list); err != nil {
+		return nil, err
+	}
+
+	return &EventContainer{
+		List: list,
+		Raw:  rawList,
+	}, nil
+}
+
+func (e EventContainer) GetLast() (Event, bool) {
+	size := len(e.List.Items)
+
+	if size <= 0 {
+		return Event{}, false
+	}
+
+	return e.List.Items[len(e.List.Items)-1], true
+}
+
+func (e EventContainer) FilterActiveEvents() RawEventList {
+	filtered := make([]json.RawMessage, 0, len(e.List.Items))
+
+	for i, evt := range e.List.Items {
 		if _, shouldWatch := EventsWatch[evt.Name]; shouldWatch {
-			res = append(res, evt)
+			filtered = append(filtered, e.Raw.Items[i])
 		}
 	}
 
-	return res
+	return RawEventList{Items: filtered}
 }
 
 type Player struct {

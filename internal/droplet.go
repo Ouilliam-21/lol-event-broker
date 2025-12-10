@@ -2,77 +2,106 @@ package internal
 
 import (
 	"bytes"
+	"context"
+	"crypto/tls"
 	"fmt"
-	"io"
+	"log"
+	"michelprogram/lol-event/internal/utils"
 	"net/http"
+	"net/url"
 	"time"
 )
 
 type Droplet struct {
-	endpoint string
-	queue    <-chan []byte
+	endpointPlayers *url.URL
+	endpointEvents  *url.URL
+	httpClient      *http.Client
+	events          <-chan []byte
+	players         <-chan []byte
 }
 
-func NewDroplet(endpoint string, queue <-chan []byte) (*Droplet, error) {
+func NewDroplet(endpoint string, events <-chan []byte, players <-chan []byte) (*Droplet, error) {
+	endpointPlayers, err := url.Parse(fmt.Sprintf("%s/players", endpoint))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse players endpoint: %w", err)
+	}
 
-	//health := fmt.Sprintf("%s/health", endpoint)
-	/*
-		err := checkEndpoints(health)
+	endpointEvents, err := url.Parse(fmt.Sprintf("%s/events", endpoint))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse events endpoint: %w", err)
+	}
 
-		if err != nil {
-			return nil, err
-		}
-	*/
+	endpointHealth, err := url.Parse(fmt.Sprintf("%s/health", endpoint))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse health endpoint: %w", err)
+	}
+
+	httpClient := &http.Client{
+		Timeout: 5 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
+			MaxIdleConns:        10,
+			MaxIdleConnsPerHost: 2,
+			IdleConnTimeout:     90 * time.Second,
+		},
+	}
+
+	_, err = utils.HttpGetRequest(httpClient, endpointHealth)
+	if err != nil {
+		return nil, fmt.Errorf("health check failed: %w", err)
+	}
+
+	log.Println("Droplet health check passed")
+
 	return &Droplet{
-		endpoint: endpoint,
+		endpointPlayers: endpointPlayers,
+		endpointEvents:  endpointEvents,
+		events:          events,
+		players:         players,
+		httpClient:      httpClient,
 	}, nil
 }
 
-func checkEndpoints(url string) error {
+func (d Droplet) SendEvents(ctx context.Context) error {
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("SendEvents shutting down")
+			return ctx.Err()
+		case msg, ok := <-d.events:
+			if !ok {
+				log.Println("Events channel closed")
+				return nil
+			}
+			_, err := utils.HttpPostRequest(d.httpClient, d.endpointEvents, bytes.NewReader(msg))
+			if err != nil {
+				log.Printf("Failed to send event: %v", err)
+				continue
+			}
+			log.Println("Event sent successfully")
+		}
 	}
-
-	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to call droplet api service: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("pricing service returned status %d: %s", resp.StatusCode, string(body))
-	}
-
-	return nil
 }
 
-func (d Droplet) Send(data []byte) error {
+func (d Droplet) SendPlayers(ctx context.Context) error {
 
-	url := fmt.Sprintf("%s/generate", d.endpoint)
-
-	r := bytes.NewReader(data)
-
-	req, err := http.NewRequest("POST", url, r)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("SendPlayers shutting down")
+			return ctx.Err()
+		case msg, ok := <-d.players:
+			if !ok {
+				log.Println("Players channel closed")
+				return nil
+			}
+			_, err := utils.HttpPostRequest(d.httpClient, d.endpointPlayers, bytes.NewReader(msg))
+			if err != nil {
+				log.Printf("Failed to send players: %v", err)
+				continue
+			}
+			log.Println("Players sent successfully")
+		}
 	}
-
-	client := &http.Client{Timeout: time.Second * time.Duration(10)}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to request at %s: %w", url, err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		raw, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("url returned status %d: %s", resp.StatusCode, string(raw))
-	}
-
-	return nil
 }

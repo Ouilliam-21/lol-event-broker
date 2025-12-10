@@ -51,7 +51,7 @@ func NewLiveClient(endpoint string, events chan<- []byte, players chan<- []byte)
 }
 
 func (lc *LiveClient) poolGameEvent() {
-	var evts Events
+	var events Events
 	var eventID int64
 
 	log.Println("Game started")
@@ -71,16 +71,29 @@ func (lc *LiveClient) poolGameEvent() {
 			return
 		}
 
-		if err := json.Unmarshal(raw, &evts); err != nil {
+		if err := json.Unmarshal(raw, &events); err != nil {
 			log.Println("Can't unmarshal JSON:", err)
 			continue
 		}
 
-		if len(evts.Events) > 0 {
-			eventID = evts.Events[len(evts.Events)-1].ID
+		if len(events.Events) <= 0 {
+			continue
 		}
 
-		lc.events <- raw
+		lastId := events.GetLast().ID
+
+		if lastId == eventID {
+			continue
+		}
+
+		eventsJSON, err := json.Marshal(events.FilterActiveEvents())
+		if err != nil {
+			log.Printf("Failed to marshal players: %v", err)
+			continue
+		}
+
+		eventID = lastId
+		lc.events <- eventsJSON
 		log.Printf("Next event id %d", eventID)
 	}
 }
@@ -104,13 +117,13 @@ func (lc *LiveClient) Process() error {
 			continue
 		}
 
-		playerJSON, err := json.Marshal(players)
+		playersJSON, err := json.Marshal(players)
 		if err != nil {
 			log.Printf("Failed to marshal players: %v", err)
 			continue
 		}
 
-		lc.players <- playerJSON
+		lc.players <- playersJSON
 		lc.poolGameEvent()
 	}
 }

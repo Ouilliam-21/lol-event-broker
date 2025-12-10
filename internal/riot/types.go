@@ -4,11 +4,28 @@ type status string
 
 type event string
 
+type Event struct {
+	ID   int64 `json:"EventID"`
+	Name event `json:"EventName"`
+}
+
 type Events struct {
-	Events []struct {
-		ID   int64 `json:"EventID"`
-		Name event `json:"EventName"`
-	} `json:"Events"`
+	Events []Event `json:"Events"`
+}
+
+func (e Events) GetLast() Event {
+	return e.Events[len(e.Events)-1]
+}
+
+func (e Events) FilterActiveEvents() []Event {
+	res := make([]Event, 0)
+	for _, evt := range e.Events {
+		if _, shouldWatch := EventsWatch[evt.Name]; shouldWatch {
+			res = append(res, evt)
+		}
+	}
+
+	return res
 }
 
 type Player struct {

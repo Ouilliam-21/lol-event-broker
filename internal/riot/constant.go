@@ -25,7 +25,8 @@ const (
 	DragonKill      event = "DragonKill"
 	InhibKilled     event = "InhibKilled"
 	TurretKilled    event = "TurretKilled"
-	FirstBrick      event = "FirstBrick"
+	FirstBrick      event = "FirstBrick"	
+	FirstBlood      event = "FirstBlood"
 )
 
 var EventsWatch = map[event]struct{}{

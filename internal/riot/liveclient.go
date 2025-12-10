@@ -51,52 +51,57 @@ func NewLiveClient(endpoint string, events chan<- []byte, players chan<- []byte)
 	}, nil
 }
 
-func (lc *LiveClient) poolGameEvent() {
+func (lc *LiveClient) poolGameEvent(ctx context.Context) {
 	var eventID int64
 
 	log.Println("Game started")
 	lc.gameStatus = Running
 
 	for lc.gameStatus == Running {
-		time.Sleep(5 * time.Second)
-
-		q := lc.endpointEvents.Query()
-		q.Set("eventID", strconv.FormatInt(eventID, 10))
-		lc.endpointEvents.RawQuery = q.Encode()
-
-		raw, err := utils.HttpGetRequest(lc.httpClient, lc.endpointEvents)
-
-		if err != nil {
-			log.Println("Game likely ended: ", err)
+		select {
+		case <-ctx.Done():
+			log.Println("poolGameEvent shutting down")
 			lc.gameStatus = NotStarted
 			return
+		case <-time.After(5 * time.Second):
+			q := lc.endpointEvents.Query()
+			q.Set("eventID", strconv.FormatInt(eventID, 10))
+			lc.endpointEvents.RawQuery = q.Encode()
+
+			raw, err := utils.HttpGetRequest(lc.httpClient, lc.endpointEvents)
+
+			if err != nil {
+				log.Println("Game likely ended: ", err)
+				lc.gameStatus = NotStarted
+				return
+			}
+
+			eventsContainer, err := NewEvents(raw)
+			if err != nil {
+				log.Println("Can't unmarshal JSON:", err)
+				continue
+			}
+
+			if len(eventsContainer.List.Items) <= 0 {
+				continue
+			}
+
+			last, ok := eventsContainer.GetLast()
+
+			if !ok || last.ID == eventID {
+				continue
+			}
+
+			eventsJSON, err := json.Marshal(eventsContainer.FilterActiveEvents())
+			if err != nil {
+				log.Printf("Failed to marshal players: %v", err)
+				continue
+			}
+
+			eventID = last.ID
+			lc.events <- eventsJSON
+			log.Printf("Next event id %d", eventID)
 		}
-
-		eventsContainer, err := NewEvents(raw)
-		if err != nil {
-			log.Println("Can't unmarshal JSON:", err)
-			continue
-		}
-
-		if len(eventsContainer.List.Items) <= 0 {
-			continue
-		}
-
-		last, ok := eventsContainer.GetLast()
-
-		if !ok || last.ID == eventID {
-			continue
-		}
-
-		eventsJSON, err := json.Marshal(eventsContainer.FilterActiveEvents())
-		if err != nil {
-			log.Printf("Failed to marshal players: %v", err)
-			continue
-		}
-
-		eventID = last.ID
-		lc.events <- eventsJSON
-		log.Printf("Next event id %d", eventID)
 	}
 }
 
@@ -106,11 +111,9 @@ func (lc *LiveClient) Process(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("SendEvents shutting down")
+			log.Println("Process shutting down")
 			return ctx.Err()
-		default:
-			time.Sleep(5 * time.Second)
-
+		case <-time.After(5 * time.Second):
 			raw, err := utils.HttpGetRequest(lc.httpClient, lc.endpointPlayers)
 			if err != nil && lc.gameStatus == NotStarted {
 				log.Println("Game not started: couldn't reach live client endpoint")
@@ -131,7 +134,7 @@ func (lc *LiveClient) Process(ctx context.Context) error {
 			}
 
 			lc.players <- playersJSON
-			lc.poolGameEvent()
+			lc.poolGameEvent(ctx)
 		}
 
 	}

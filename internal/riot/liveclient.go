@@ -60,10 +60,11 @@ func (lc *LiveClient) poolGameEvent() {
 	for lc.gameStatus == Running {
 		time.Sleep(5 * time.Second)
 
-		eventURL := *lc.endpointEvents
-		q := eventURL.Query()
+		q := lc.endpointEvents.Query()
 		q.Set("eventID", strconv.FormatInt(eventID, 10))
-		raw, err := utils.HttpGetRequest(lc.httpClient, &eventURL)
+		lc.endpointEvents.RawQuery = q.Encode()
+
+		raw, err := utils.HttpGetRequest(lc.httpClient, lc.endpointEvents)
 
 		if err != nil {
 			log.Println("Game likely ended: ", err)

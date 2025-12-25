@@ -66,6 +66,10 @@ func (h *HeraldKillEvent) GetInvolvedPlayer() string {
 	return h.KillerName
 }
 
+func (h *HeraldKillEvent) ToJson() (json.RawMessage, error) {
+	return json.Marshal(h)
+}
+
 type ChampionKillEvent struct {
 	BaseEvent
 	KillerName string   `json:"KillerName"`
@@ -83,6 +87,10 @@ func (c *ChampionKillEvent) GetInvolvedPlayer() string {
 	return c.VictimName
 }
 
+func (c *ChampionKillEvent) ToJson() (json.RawMessage, error) {
+	return json.Marshal(c)
+}
+
 type BaronKillEvent struct {
 	BaseEvent
 	KillerName string   `json:"KillerName"`
@@ -98,6 +106,10 @@ func (b *BaronKillEvent) GetInvolvedPlayers() []string {
 
 func (b *BaronKillEvent) GetInvolvedPlayer() string {
 	return b.KillerName
+}
+
+func (b *BaronKillEvent) ToJson() (json.RawMessage, error) {
+	return json.Marshal(b)
 }
 
 type DragonKillEvent struct {
@@ -118,11 +130,19 @@ func (d *DragonKillEvent) GetInvolvedPlayers() []string {
 	return players
 }
 
+func (d *DragonKillEvent) ToJson() (json.RawMessage, error) {
+	return json.Marshal(d)
+}
+
 type TurretKilledEvent struct {
 	BaseEvent
 	TurretKilled string   `json:"TurretKilled"`
 	KillerName   string   `json:"KillerName"`
 	Assisters    []string `json:"Assisters"`
+}
+
+func (t *TurretKilledEvent) ToJson() (json.RawMessage, error) {
+	return json.Marshal(t)
 }
 
 func (t *TurretKilledEvent) GetInvolvedPlayer() string {
@@ -152,6 +172,10 @@ func (i *InhibKilledEvent) GetInvolvedPlayers() []string {
 	return players
 }
 
+func (i *InhibKilledEvent) ToJson() (json.RawMessage, error) {
+	return json.Marshal(i)
+}
+
 type MultiKillEvent struct {
 	BaseEvent
 	KillerName string `json:"KillerName"`
@@ -164,6 +188,10 @@ func (m *MultiKillEvent) GetInvolvedPlayer() string {
 
 func (m *MultiKillEvent) GetInvolvedPlayers() []string {
 	return []string{m.KillerName}
+}
+
+func (m *MultiKillEvent) ToJson() (json.RawMessage, error) {
+	return json.Marshal(m)
 }
 
 type AceEvent struct {
@@ -180,6 +208,10 @@ func (a *AceEvent) GetInvolvedPlayers() []string {
 	return []string{a.Acer}
 }
 
+func (a *AceEvent) ToJson() (json.RawMessage, error) {
+	return json.Marshal(a)
+}
+
 type FirstBrickEvent struct {
 	BaseEvent
 	KillerName string `json:"KillerName"`
@@ -191,4 +223,8 @@ func (f *FirstBrickEvent) GetInvolvedPlayer() string {
 
 func (f *FirstBrickEvent) GetInvolvedPlayers() []string {
 	return []string{f.KillerName}
+}
+
+func (f *FirstBrickEvent) ToJson() (json.RawMessage, error) {
+	return json.Marshal(f)
 }

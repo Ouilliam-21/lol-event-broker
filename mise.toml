@@ -29,4 +29,4 @@ run = "echo 'All builds completed successfully!'"
 
 [tasks."run:local"]
 description = "Run the app locally"
-run = "go run ./cmd/main.go -liveclient=https://127.0.0.1:2999 -droplet=http://127.0.0.1:8080"
+run = "go run ./cmd/main.go -config=config.yaml"

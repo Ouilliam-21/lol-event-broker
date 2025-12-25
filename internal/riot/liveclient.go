@@ -35,7 +35,7 @@ type LiveClient struct {
 	eventManager          *events.EventManager
 }
 
-func NewLiveClient(endpoint string, eventIds chan<- []string, gameSessionRepository db.IGameSessionRepository, riotEventRepository db.IRiotEventRepository) (*LiveClient, error) {
+func NewLiveClient(endpoint string, eventIds chan<- []string, gameSessionRepository db.IGameSessionRepository, riotEventRepository db.IRiotEventRepository, watchedPlayers []string, watchedEvents []string) (*LiveClient, error) {
 
 	endpointEvents, err := url.Parse(fmt.Sprintf("%s/liveclientdata/eventdata", endpoint))
 	if err != nil {
@@ -62,7 +62,7 @@ func NewLiveClient(endpoint string, eventIds chan<- []string, gameSessionReposit
 		httpClient:            httpClient,
 		gameSessionRepository: gameSessionRepository,
 		riotEventRepository:   riotEventRepository,
-		eventManager:          events.NewEventManager(),
+		eventManager:          events.NewEventManager(watchedPlayers, watchedEvents),
 	}, nil
 }
 

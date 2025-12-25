@@ -5,28 +5,25 @@ import (
 	"flag"
 	"log"
 	"michelprogram/lol-event/internal"
+	"michelprogram/lol-event/internal/config"
 	"michelprogram/lol-event/internal/database"
 	"michelprogram/lol-event/internal/riot"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
-
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	var apiEndpoint string
-	var dropletEndpoint string
+	var configFile string
 	var wg sync.WaitGroup
 
-	flag.StringVar(&apiEndpoint, "liveclient", "https://127.0.0.1:2999", "api endpoints to reach live client data")
-	flag.StringVar(&dropletEndpoint, "droplet", "https://127.0.0.1:2999", "endpoint to send league of legend event")
+	flag.StringVar(&configFile, "config", "config.yaml", "path to configuration file")
 	flag.Parse()
 
-	err := godotenv.Load()
+	cfg, err := config.LoadConfig(configFile)
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatalf("Failed to load config: %v", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -34,20 +31,20 @@ func main() {
 
 	eventIds := make(chan []string, 100)
 
-	conn, err := database.NewDatabase()
+	conn, err := database.NewDatabase(cfg.Database.User, cfg.Database.Password, cfg.Database.Host, cfg.Database.Port, cfg.Database.Name)
 	if err != nil {
-		log.Fatalf("Failed to create Database: %v", err)
+		log.Fatalf("Failed to connect to Database: %v", err)
 	}
 
 	gameSessionRepository := database.NewGameSessionRepository(conn.Pool)
 	riotEventRepository := database.NewRiotEventRepository(conn.Pool)
 
-	liveClient, err := riot.NewLiveClient(apiEndpoint, eventIds, gameSessionRepository, riotEventRepository)
+	liveClient, err := riot.NewLiveClient(cfg.Endpoints.LiveClient, eventIds, gameSessionRepository, riotEventRepository, cfg.GetWatchedPlayers(), cfg.GetWatchedEvents())
 	if err != nil {
 		log.Fatalf("Failed to create LiveClient: %v", err)
 	}
 
-	droplet, err := internal.NewDroplet(dropletEndpoint, eventIds)
+	droplet, err := internal.NewDroplet(cfg.Endpoints.Droplet, eventIds)
 	if err != nil {
 		log.Fatalf("Failed to create Droplet: %v", err)
 	}

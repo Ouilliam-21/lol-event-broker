@@ -13,22 +13,23 @@ type EventManager struct {
 	eventFactory   *EventFactory
 }
 
-func NewEventManager() *EventManager {
+func NewEventManager(watchedPlayers []string, watchedEvents []string) *EventManager {
+
+	eventsToWatch := make(map[EventName]struct{})
+	for _, event := range watchedEvents {
+		eventsToWatch[EventName(event)] = struct{}{}
+	}
+
+	playersToWatch := make(map[string]struct{})
+	for _, player := range watchedPlayers {
+		playersToWatch[player] = struct{}{}
+	}
+
 	return &EventManager{
-		events: make([]IBaseEvent, 0),
-		eventsToWatch: map[EventName]struct{}{
-			Ace:          {},
-			ChampionKill: {},
-			BaronKill:    {},
-			HeraldKill:   {},
-			DragonKill:   {},
-			InhibKilled:  {},
-			TurretKilled: {},
-		},
-		playersToWatch: map[string]struct{}{
-			"21 Michael Scott": {},
-		},
-		eventFactory: NewEventFactory(),
+		events:         make([]IBaseEvent, 0),
+		playersToWatch: playersToWatch,
+		eventsToWatch:  eventsToWatch,
+		eventFactory:   NewEventFactory(),
 	}
 }
 

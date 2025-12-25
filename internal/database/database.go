@@ -3,7 +3,6 @@ package database
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -12,32 +11,7 @@ type Database struct {
 	Pool *pgxpool.Pool
 }
 
-func NewDatabase() (*Database, error) {
-
-	user := os.Getenv("DATABASE_USER")
-	if user == "" {
-		return nil, fmt.Errorf("DATABASE_USER is not set")
-	}
-
-	password := os.Getenv("DATABASE_PASSWORD")
-	if password == "" {
-		return nil, fmt.Errorf("DATABASE_PASSWORD is not set")
-	}
-
-	host := os.Getenv("DATABASE_HOST")
-	if host == "" {
-		return nil, fmt.Errorf("DATABASE_HOST is not set")
-	}
-
-	port := os.Getenv("DATABASE_PORT")
-	if port == "" {
-		return nil, fmt.Errorf("DATABASE_PORT is not set")
-	}
-
-	database := os.Getenv("DATABASE_NAME")
-	if database == "" {
-		return nil, fmt.Errorf("DATABASE_NAME is not set")
-	}
+func NewDatabase(user, password, host, port, database string) (*Database, error) {
 
 	url := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", user, password, host, port, database)
 

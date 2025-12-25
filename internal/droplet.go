@@ -14,10 +14,9 @@ import (
 )
 
 type Droplet struct {
-	endpointPlayers *url.URL
-	endpointEvents  *url.URL
-	httpClient      *http.Client
-	eventIds        <-chan []string
+	endpointEvents *url.URL
+	httpClient     *http.Client
+	eventIds       <-chan []string
 }
 
 type EventIds struct {
@@ -72,11 +71,15 @@ func (d Droplet) SendEvents(ctx context.Context) error {
 				log.Println("Events channel closed")
 				return nil
 			}
+			if len(ids) == 0 {
+				continue
+			}
 			payload, err := json.Marshal(EventIds{EventIds: ids})
 			if err != nil {
 				log.Printf("Failed to marshal event ids: %v", err)
 				continue
 			}
+			log.Printf("Sending event ids: %s", string(payload))
 			_, err = utils.HttpPostRequest(d.httpClient, d.endpointEvents, bytes.NewReader(payload))
 			if err != nil {
 				log.Printf("Failed to send event: %v", err)

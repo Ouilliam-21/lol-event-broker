@@ -1,0 +1,28 @@
+endpoints:
+  live_client: Live client URL #"https://127.0.0.1:2999"
+  droplet: Your droplet URL #"http://localhost:8080"
+
+database:
+  host: Your database host #"localhost"
+  port: Your database port #"5432"
+  name: Your database name #"lol_events"
+  user: Your database user #"username"
+  password: Your database password #"password"
+
+events:
+  # Events to watch for
+  watch:
+    - ChampionKill
+    - BaronKill
+    - DragonKill
+    - HeraldKill
+    - TurretKilled
+    - InhibKilled
+    - Ace
+    - MultiKill
+    - FirstBrick
+
+players:
+  watch:
+    - "21 Michael Scott"
+    - "Another Player"

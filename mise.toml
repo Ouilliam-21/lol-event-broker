@@ -26,3 +26,7 @@ run = "env GOOS=darwin GOARCH=amd64 go build -ldflags='-s -w' -o build/lol-event
 description = "Build for all platforms"
 depends = ["build:windows-x64", "build:windows-x32", "build:windows-arm-x64", "build:mac-arm", "build:mac-intel"]
 run = "echo 'All builds completed successfully!'"
+
+[tasks."run:local"]
+description = "Run the app locally"
+run = "go run ./cmd/main.go -liveclient=https://127.0.0.1:2999 -droplet=http://127.0.0.1:8080"

@@ -15,7 +15,6 @@ const (
 
 type GameSession struct {
 	ID         string          `json:"id"`
-	RiotGameId int64           `json:"riotGameId"`
 	Status     GameStatus      `json:"status"`
 	StartedAt  time.Time       `json:"startedAt"`
 	EndedAt    time.Time       `json:"endedAt"`
@@ -30,7 +29,6 @@ type RiotEvent struct {
 	RiotEventId   int64           `json:"riotEventId"`
 	EventName     string          `json:"eventName"`
 	EventData     json.RawMessage `json:"eventData"`
-	ReceivedAt    time.Time       `json:"receivedAt"`
 	CreatedAt     time.Time       `json:"createdAt"`
 }
 

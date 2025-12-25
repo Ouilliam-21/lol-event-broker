@@ -18,7 +18,7 @@ func NewGameSessionRepository(db *pgxpool.Pool) *GameSessionRepository {
 func (r *GameSessionRepository) CreateGameSession(ctx context.Context, gameSession *GameSession) (*GameSession, error) {
 
 	var insertedID string
-	err := r.db.QueryRow(ctx, "INSERT INTO game_sessions (id, riot_game_id, status, started_at, ended_at, player_data) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id", gameSession.ID, gameSession.RiotGameId, gameSession.Status, gameSession.StartedAt, gameSession.EndedAt, gameSession.PlayerData).Scan(&insertedID)
+	err := r.db.QueryRow(ctx, "INSERT INTO game_sessions (id, status, started_at, ended_at, player_data) VALUES ($1, $2, $3, $4, $5) RETURNING id", gameSession.ID, gameSession.Status, gameSession.StartedAt, gameSession.EndedAt, gameSession.PlayerData).Scan(&insertedID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create game session: %w", err)
 	}

@@ -21,6 +21,10 @@ func httpRequest(client *http.Client, method string, targetURL *url.URL, body io
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
+	if body != nil {
+		request.Header.Set("Content-Type", "application/json")
+	}
+
 	resp, err := client.Do(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to request at %s: %w", targetURL.String(), err)

@@ -11,6 +11,8 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -21,6 +23,11 @@ func main() {
 	flag.StringVar(&apiEndpoint, "liveclient", "https://127.0.0.1:2999", "api endpoints to reach live client data")
 	flag.StringVar(&dropletEndpoint, "droplet", "https://127.0.0.1:2999", "endpoint to send league of legend event")
 	flag.Parse()
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

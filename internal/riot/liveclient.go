@@ -6,28 +6,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	db "michelprogram/lol-event/internal/database"
 	"michelprogram/lol-event/internal/utils"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type LiveClient struct {
-	gameStatus      status
-	endpointPlayers *url.URL
-	endpointEvents  *url.URL
-	httpClient      *http.Client
-	events          chan<- []byte
-	players         chan<- []byte
+	gameStatus            status
+	endpointPlayers       *url.URL
+	endpointEvents        *url.URL
+	httpClient            *http.Client
+	eventIds              chan<- []string
+	gameSessionRepository db.IGameSessionRepository
+	riotEventRepository   db.IRiotEventRepository
 }
 
-func NewLiveClient(endpoint string, events chan<- []byte, players chan<- []byte) (*LiveClient, error) {
-
-	endpointPlayers, err := url.Parse(fmt.Sprintf("%s/liveclientdata/playerlist", endpoint))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse players endpoint: %w", err)
-	}
+func NewLiveClient(endpoint string, eventIds chan<- []string, gameSessionRepository db.IGameSessionRepository, riotEventRepository db.IRiotEventRepository) (*LiveClient, error) {
 
 	endpointEvents, err := url.Parse(fmt.Sprintf("%s/liveclientdata/eventdata", endpoint))
 	if err != nil {
@@ -42,16 +41,16 @@ func NewLiveClient(endpoint string, events chan<- []byte, players chan<- []byte)
 	}
 
 	return &LiveClient{
-		endpointPlayers: endpointPlayers,
-		endpointEvents:  endpointEvents,
-		gameStatus:      NotStarted,
-		events:          events,
-		players:         players,
-		httpClient:      httpClient,
+		endpointEvents:        endpointEvents,
+		gameStatus:            NotStarted,
+		eventIds:              eventIds,
+		httpClient:            httpClient,
+		gameSessionRepository: gameSessionRepository,
+		riotEventRepository:   riotEventRepository,
 	}, nil
 }
 
-func (lc *LiveClient) poolGameEvent(ctx context.Context) {
+func (lc *LiveClient) poolGameEvent(ctx context.Context, gameSessionID string) {
 	var eventID int64
 
 	log.Println("Game started")
@@ -76,7 +75,7 @@ func (lc *LiveClient) poolGameEvent(ctx context.Context) {
 				return
 			}
 
-			eventsContainer, err := NewEvents(raw)
+			eventsContainer, err := NewEventContainer(raw)
 			if err != nil {
 				log.Println("Can't unmarshal JSON:", err)
 				continue
@@ -92,21 +91,36 @@ func (lc *LiveClient) poolGameEvent(ctx context.Context) {
 				continue
 			}
 
-			eventsJSON, err := json.Marshal(eventsContainer.FilterActiveEvents())
-			if err != nil {
-				log.Printf("Failed to marshal players: %v", err)
-				continue
+			eventsContainer.FilterActiveEvents()
+
+			ids := make([]string, 0, len(eventsContainer.List.Items))
+
+			for _, event := range eventsContainer.List.Items {
+				riotEvent := &db.RiotEvent{
+					ID:            uuid.New().String(),
+					GameSessionId: gameSessionID,
+					RiotEventId:   event.ID,
+					EventName:     string(event.Name),
+					EventData:     event.Raw,
+				}
+
+				_, err = lc.riotEventRepository.CreateRiotEvent(ctx, riotEvent)
+				if err != nil {
+					log.Printf("Failed to create riot event: %v", err)
+					continue
+				}
+
+				ids = append(ids, riotEvent.ID)
 			}
 
 			eventID = last.ID
-			lc.events <- eventsJSON
+			lc.eventIds <- ids
 			log.Printf("Next event id %d", eventID)
 		}
 	}
 }
 
 func (lc *LiveClient) Process(ctx context.Context) error {
-	players := make([]Player, 0, 10)
 
 	for {
 		select {
@@ -120,21 +134,34 @@ func (lc *LiveClient) Process(ctx context.Context) error {
 				continue
 			}
 
-			players = players[:0]
+			now := time.Now()
 
-			if err := json.Unmarshal(raw, &players); err != nil {
-				log.Println("Can't unmarshal JSON:", err)
-				continue
+			gameSessionItem := &db.GameSession{
+				ID:         uuid.New().String(),
+				RiotGameId: 0,
+				Status:     db.GameStatusActive,
+				StartedAt:  now,
+				PlayerData: json.RawMessage(raw),
+				CreatedAt:  now,
+				UpdatedAt:  now,
 			}
 
-			playersJSON, err := json.Marshal(players)
+			gameSession, err := lc.gameSessionRepository.CreateGameSession(ctx, gameSessionItem)
+
+			log.Printf("Game session created: %d\n", gameSession.RiotGameId)
 			if err != nil {
-				log.Printf("Failed to marshal players: %v", err)
-				continue
+				return fmt.Errorf("failed to create game session: %w", err)
 			}
 
-			lc.players <- playersJSON
-			lc.poolGameEvent(ctx)
+			lc.poolGameEvent(ctx, gameSession.ID)
+
+			gameSessionItem.Status = db.GameStatusPlayed
+			gameSessionItem.EndedAt = time.Now()
+
+			_, err = lc.gameSessionRepository.UpdateGameSession(ctx, gameSessionItem)
+			if err != nil {
+				return fmt.Errorf("failed to update game session: %w", err)
+			}
 		}
 
 	}

@@ -21,7 +21,7 @@ type EventContainer struct {
 	Raw  RawEventList
 }
 
-func NewEvents(data []byte) (*EventContainer, error) {
+func NewEventContainer(data []byte) (*EventContainer, error) {
 	var list EventList
 	var rawList RawEventList
 
@@ -49,16 +49,20 @@ func (e EventContainer) GetLast() (Event, bool) {
 	return e.List.Items[len(e.List.Items)-1], true
 }
 
-func (e EventContainer) FilterActiveEvents() RawEventList {
-	filtered := make([]json.RawMessage, 0, len(e.List.Items))
+func (e *EventContainer) FilterActiveEvents() {
+	events := make([]Event, 0, len(e.List.Items))
+	raw := make([]json.RawMessage, 0, len(e.List.Items))
 
 	for i, evt := range e.List.Items {
 		if _, shouldWatch := EventsWatch[evt.Name]; shouldWatch {
-			filtered = append(filtered, e.Raw.Items[i])
+			events = append(events, evt)
+			raw = append(raw, e.Raw.Items[i])
 		}
 	}
 
-	return RawEventList{Items: filtered}
+	e.List.Items = events
+	e.Raw.Items = raw
+
 }
 
 type Player struct {

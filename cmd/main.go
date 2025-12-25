@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log"
 	"michelprogram/lol-event/internal"
+	"michelprogram/lol-event/internal/database"
 	"michelprogram/lol-event/internal/riot"
 	"os"
 	"os/signal"
@@ -24,15 +25,22 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	events := make(chan []byte, 100)
-	players := make(chan []byte, 100)
+	eventIds := make(chan []string, 100)
 
-	liveClient, err := riot.NewLiveClient(apiEndpoint, events, players)
+	conn, err := database.NewDatabase()
+	if err != nil {
+		log.Fatalf("Failed to create Database: %v", err)
+	}
+
+	gameSessionRepository := database.NewGameSessionRepository(conn.Pool)
+	riotEventRepository := database.NewRiotEventRepository(conn.Pool)
+
+	liveClient, err := riot.NewLiveClient(apiEndpoint, eventIds, gameSessionRepository, riotEventRepository)
 	if err != nil {
 		log.Fatalf("Failed to create LiveClient: %v", err)
 	}
 
-	droplet, err := internal.NewDroplet(dropletEndpoint, events, players)
+	droplet, err := internal.NewDroplet(dropletEndpoint, eventIds)
 	if err != nil {
 		log.Fatalf("Failed to create Droplet: %v", err)
 	}
@@ -55,14 +63,6 @@ func main() {
 		}
 	}()
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if err := droplet.SendPlayers(ctx); err != nil {
-			log.Printf("SendPlayers error: %v", err)
-		}
-	}()
-
 	log.Println("All services started, waiting for events...")
 
 	// Wait for interrupt signal
@@ -74,8 +74,7 @@ func main() {
 
 	cancel()
 
-	close(events)
-	close(players)
+	close(eventIds)
 
 	wg.Wait()
 	log.Println("Shutdown complete")

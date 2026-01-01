@@ -17,13 +17,14 @@ type Droplet struct {
 	endpointEvents *url.URL
 	httpClient     *http.Client
 	eventIds       <-chan []string
+	authToken      string
 }
 
 type EventIds struct {
 	EventIds []string `json:"eventIds"`
 }
 
-func NewDroplet(endpoint string, eventIds <-chan []string) (*Droplet, error) {
+func NewDroplet(endpoint string, eventIds <-chan []string, authToken string) (*Droplet, error) {
 
 	endpointEvents, err := url.Parse(fmt.Sprintf("%s/events", endpoint))
 	if err != nil {
@@ -45,7 +46,7 @@ func NewDroplet(endpoint string, eventIds <-chan []string) (*Droplet, error) {
 		},
 	}
 
-	_, err = utils.HttpGetRequest(httpClient, endpointHealth)
+	_, err = utils.HttpGetRequest(httpClient, endpointHealth, authToken)
 	if err != nil {
 		return nil, fmt.Errorf("health check failed: %w", err)
 	}
@@ -56,6 +57,7 @@ func NewDroplet(endpoint string, eventIds <-chan []string) (*Droplet, error) {
 		endpointEvents: endpointEvents,
 		eventIds:       eventIds,
 		httpClient:     httpClient,
+		authToken:      authToken,
 	}, nil
 }
 
@@ -80,7 +82,7 @@ func (d Droplet) SendEvents(ctx context.Context) error {
 				continue
 			}
 			log.Printf("Sending event ids: %s", string(payload))
-			_, err = utils.HttpPostRequest(d.httpClient, d.endpointEvents, bytes.NewReader(payload))
+			_, err = utils.HttpPostRequest(d.httpClient, d.endpointEvents, bytes.NewReader(payload), d.authToken)
 			if err != nil {
 				log.Printf("Failed to send event: %v", err)
 				continue

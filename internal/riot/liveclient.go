@@ -83,7 +83,7 @@ func (lc *LiveClient) poolGameEvent(ctx context.Context, gameSessionID string) {
 			q.Set("eventID", strconv.FormatInt(eventID, 10))
 			lc.endpointEvents.RawQuery = q.Encode()
 
-			raw, err := utils.HttpGetRequest(lc.httpClient, lc.endpointEvents)
+			raw, err := utils.HttpGetRequest(lc.httpClient, lc.endpointEvents, "")
 
 			if err != nil {
 				log.Println("Game likely ended: ", err)
@@ -151,7 +151,7 @@ func (lc *LiveClient) Process(ctx context.Context) error {
 			log.Println("Process shutting down")
 			return ctx.Err()
 		case <-time.After(5 * time.Second):
-			raw, err := utils.HttpGetRequest(lc.httpClient, lc.endpointsPlayers)
+			raw, err := utils.HttpGetRequest(lc.httpClient, lc.endpointsPlayers, "")
 			if err != nil && lc.gameStatus == NotStarted {
 				log.Println("Game not started: couldn't reach live client endpoint")
 				continue

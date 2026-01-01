@@ -17,6 +17,7 @@ type Config struct {
 type EndpointsConfig struct {
 	LiveClient string `yaml:"live_client"`
 	Droplet    string `yaml:"droplet"`
+	AuthToken  string `yaml:"auth_token"`
 }
 
 type DatabaseConfig struct {

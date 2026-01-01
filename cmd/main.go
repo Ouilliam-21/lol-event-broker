@@ -44,7 +44,7 @@ func main() {
 		log.Fatalf("Failed to create LiveClient: %v", err)
 	}
 
-	droplet, err := internal.NewDroplet(cfg.Endpoints.Droplet, eventIds)
+	droplet, err := internal.NewDroplet(cfg.Endpoints.Droplet, eventIds, cfg.Endpoints.AuthToken)
 	if err != nil {
 		log.Fatalf("Failed to create Droplet: %v", err)
 	}

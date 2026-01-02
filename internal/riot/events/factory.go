@@ -17,6 +17,13 @@ func (f *EventFactory) CreateEvent(rawEvent json.RawMessage) (IBaseEvent, error)
 		return nil, fmt.Errorf("failed to parse base event: %w", err)
 	}
 
+	var dat map[string]interface{}
+
+	if err := json.Unmarshal(rawEvent, &dat); err != nil {
+		panic(err)
+	}
+	fmt.Println("Data", dat)
+
 	switch EventName(base.EventName) {
 	case ChampionKill:
 		var evt ChampionKillEvent

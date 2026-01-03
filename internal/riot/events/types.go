@@ -51,7 +51,7 @@ type MinionsSpawningEvent struct {
 
 type HeraldKillEvent struct {
 	BaseEvent
-	Stolen     bool     `json:"Stolen"`
+	Stolen     string     `json:"Stolen"`
 	KillerName string   `json:"KillerName"`
 	Assisters  []string `json:"Assisters"`
 }
@@ -95,7 +95,7 @@ type BaronKillEvent struct {
 	BaseEvent
 	KillerName string   `json:"KillerName"`
 	Assisters  []string `json:"Assisters"`
-	Stolen     bool     `json:"Stolen"`
+	Stolen     string     `json:"Stolen"`
 }
 
 func (b *BaronKillEvent) GetInvolvedPlayers() []string {
@@ -117,7 +117,7 @@ type DragonKillEvent struct {
 	DragonType string   `json:"DragonType"`
 	KillerName string   `json:"KillerName"`
 	Assisters  []string `json:"Assisters"`
-	Stolen     bool     `json:"Stolen"`
+	Stolen     string   `json:"Stolen"`
 }
 
 func (d *DragonKillEvent) GetInvolvedPlayer() string {

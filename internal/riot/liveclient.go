@@ -107,7 +107,7 @@ func (lc *LiveClient) poolGameEvent(ctx context.Context, gameSessionID string) {
 				continue
 			}
 
-			events := lc.eventManager.FilterEvents(lastEvent.GetEventID())
+			events := lc.eventManager.FilterEvents()
 
 			ids := make([]string, 0, len(events))
 

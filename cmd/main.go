@@ -6,7 +6,7 @@ import (
 	"log"
 	"michelprogram/lol-event/internal"
 	"michelprogram/lol-event/internal/config"
-	"michelprogram/lol-event/internal/database"
+	"michelprogram/lol-event/internal/database"	
 	"michelprogram/lol-event/internal/riot"
 	"os"
 	"os/signal"

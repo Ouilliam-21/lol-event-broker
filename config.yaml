@@ -1,11 +1,13 @@
 endpoints:
   live_client: Live client URL #"https://127.0.0.1:2999"
   droplet: Your droplet URL #"http://localhost:8080"
+  auth_token: Your token #"token"
+
 
 database:
   host: Your database host #"localhost"
   port: Your database port #"5432"
-  name: Your database name #"lol_events"
+  name: Your database name #"dbname"
   user: Your database user #"username"
   password: Your database password #"password"
 
@@ -24,5 +26,4 @@ events:
 
 players:
   watch:
-    - "21 Michael Scott"
-    - "Another Player"
+    - "Player name"

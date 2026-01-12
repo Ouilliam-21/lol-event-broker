@@ -66,11 +66,12 @@ func (m *EventManager) GetLast() IBaseEvent {
 	return m.events[len(m.events)-1]
 }
 
-func (m *EventManager) FilterEvents(lastId int64) []IBaseEvent {
+func (m *EventManager) FilterEvents() []IBaseEvent {
+	lastEventId := m.GetLast().GetEventID() //By default remove last id
 	events := make([]IBaseEvent, 0)
 	for _, event := range m.events {
 
-		if event.GetEventID() == lastId {
+		if event.GetEventID() == lastEventId {
 			continue
 		}
 

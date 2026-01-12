@@ -1,4 +1,4 @@
 build
 .env
 .DS_Store
-config.yaml
+config.local.yaml

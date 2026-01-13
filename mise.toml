@@ -1,7 +1,6 @@
 [tools]
 go = "1.24.4"
 
-
 [tasks."build:windows-x64"]
 description = "Build app for Windows x64"
 run = "GOOS=windows GOARCH=amd64 go build -ldflags='-s -w' -o build/lol-event-x64.exe ./cmd/main.go"
